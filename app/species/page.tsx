@@ -1,19 +1,16 @@
-import { Separator } from "@/components/ui/separator";
-import { TypographyH2 } from "@/components/ui/typography";
 import { createServerSupabaseClient } from "@/lib/server-utils";
-import { redirect } from "next/navigation";
-import AddSpeciesDialog from "./add-species-dialog";
-import SpeciesCard from "./species-card";
 import type { Database } from "@/lib/schema";
+import { redirect } from "next/navigation";
+import SpeciesList from "./species-list";
 
-type SpeciesWithProfile = Database["public"]["Tables"]["species"]["Row"] & {
+export type SpeciesWithProfile = Database["public"]["Tables"]["species"]["Row"] & {
   profiles: {
     display_name: string;
     email: string;
   } | null;
 };
 
-export default async function SpeciesList() {
+export default async function SpeciesPage() {
   // Create supabase server component client and obtain user session from stored cookie
   const supabase = createServerSupabaseClient();
   const {
@@ -39,16 +36,6 @@ export default async function SpeciesList() {
     `)
     .order("id", { ascending: false }) as { data: SpeciesWithProfile[] | null };
 
-  return (
-    <>
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-        <TypographyH2>Species List</TypographyH2>
-        <AddSpeciesDialog userId={sessionId} />
-      </div>
-      <Separator className="my-4" />
-      <div className="flex flex-wrap justify-center">
-        {species?.map((species) => <SpeciesCard key={species.id} species={species} sessionId={sessionId} />)}
-      </div>
-    </>
-  );
+  // If no species found, pass empty array to avoid null checks in client component
+  return <SpeciesList initialSpecies={species ?? []} userId={sessionId} />;
 }
