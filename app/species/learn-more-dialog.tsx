@@ -13,10 +13,16 @@ import {
 import type { Database } from "@/lib/schema";
 import Image from "next/image";
 import { useState } from "react";
+import { User } from "lucide-react";
 
-type Species = Database["public"]["Tables"]["species"]["Row"];
+type SpeciesWithProfile = Database["public"]["Tables"]["species"]["Row"] & {
+  profiles: {
+    display_name: string;
+    email: string;
+  } | null;
+};
 
-export default function LearnMoreDialog({ species }: { species: Species }) {
+export default function LearnMoreDialog({ species }: { species: SpeciesWithProfile }) {
   const [open, setOpen] = useState<boolean>(false);
 
   return (
@@ -52,25 +58,31 @@ export default function LearnMoreDialog({ species }: { species: Species }) {
             </div>
           )}
 
-          {/* Details Section */}
-          <div className="grid gap-4">
-            <div>
-              <h4 className="text-sm font-medium">Kingdom</h4>
-              <p className="text-sm text-muted-foreground">{species.kingdom}</p>
-            </div>
-            {species.total_population !== null && (
-              <div>
-                <h4 className="text-sm font-medium">Total Population</h4>
-                <p className="text-sm text-muted-foreground">{species.total_population.toLocaleString()}</p>
-              </div>
-            )}
-            {species.description && (
-              <div>
-                <h4 className="text-sm font-medium">Description</h4>
-                <p className="text-sm text-muted-foreground">{species.description}</p>
-              </div>
-            )}
+          {/* Author Section */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <User className="h-4 w-4" />
+            <span>Added by {species.profiles?.display_name ?? "Unknown"}</span>
           </div>
+
+          {/* Description Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Description</h3>
+            <p className="text-sm text-muted-foreground">{species.description}</p>
+          </div>
+
+          {/* Kingdom Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Kingdom</h3>
+            <p className="text-sm text-muted-foreground capitalize">{species.kingdom}</p>
+          </div>
+
+          {/* Population Section */}
+          {species.total_population !== null && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Total Population</h3>
+              <p className="text-sm text-muted-foreground">{species.total_population.toLocaleString()}</p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -4,6 +4,14 @@ import { createServerSupabaseClient } from "@/lib/server-utils";
 import { redirect } from "next/navigation";
 import AddSpeciesDialog from "./add-species-dialog";
 import SpeciesCard from "./species-card";
+import type { Database } from "@/lib/schema";
+
+type SpeciesWithProfile = Database["public"]["Tables"]["species"]["Row"] & {
+  profiles: {
+    display_name: string;
+    email: string;
+  } | null;
+};
 
 export default async function SpeciesList() {
   // Create supabase server component client and obtain user session from stored cookie
@@ -20,7 +28,16 @@ export default async function SpeciesList() {
   // Obtain the ID of the currently signed-in user
   const sessionId = session.user.id;
 
-  const { data: species } = await supabase.from("species").select("*").order("id", { ascending: false });
+  const { data: species } = await supabase
+    .from("species")
+    .select(`
+      *,
+      profiles:author (
+        display_name,
+        email
+      )
+    `)
+    .order("id", { ascending: false }) as { data: SpeciesWithProfile[] | null };
 
   return (
     <>

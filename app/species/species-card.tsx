@@ -16,9 +16,14 @@ import { Badge } from "@/components/ui/badge";
 import EditSpeciesDialog from "./edit-species-dialog";
 import LearnMoreDialog from "./learn-more-dialog";
 
-type Species = Database["public"]["Tables"]["species"]["Row"];
+type SpeciesWithProfile = Database["public"]["Tables"]["species"]["Row"] & {
+  profiles: {
+    display_name: string;
+    email: string;
+  } | null;
+};
 
-export default function SpeciesCard({ species, sessionId }: { species: Species; sessionId: string }) {
+export default function SpeciesCard({ species, sessionId }: { species: SpeciesWithProfile; sessionId: string }) {
   return (
     <div className="m-4 flex w-72 flex-col rounded-lg border p-5">
       {species.image && (
