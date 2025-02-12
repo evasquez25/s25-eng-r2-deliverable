@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { useState, type BaseSyntheticEvent } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Search, Loader2 } from "lucide-react";
 
 // We use zod (z) to define a schema for the "Add species" form.
 // zod handles validation of the input values with methods like .string(), .nullable(). It also processes the form inputs with .transform() before the inputs are sent to the database.
@@ -57,7 +58,7 @@ const speciesSchema = z.object({
     .transform((val) => (!val || val.trim() === "" ? null : val.trim())),
   endangered: z
     .boolean()
-    .nullable(),
+    .default(false),
 });
 
 type FormData = z.infer<typeof speciesSchema>;
@@ -76,7 +77,7 @@ const defaultValues: Partial<FormData> = {
   total_population: null,
   image: null,
   description: null,
-  endangered: null,
+  endangered: false,
 };
 
 export default function AddSpeciesDialog({ userId }: { userId: string }) {
@@ -92,9 +93,13 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
     mode: "onChange",
   });
 
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const supabase = createBrowserSupabaseClient();
+
   const onSubmit = async (input: FormData) => {
     // The `input` prop contains data that has already been processed by zod. We can now use it in a supabase query
-    const supabase = createBrowserSupabaseClient();
     const { error } = await supabase.from("species").insert([
       {
         author: userId,
@@ -135,6 +140,67 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
     });
   };
 
+  const searchWikipedia = async () => {
+    if (!searchQuery.trim()) return;
+
+    setIsSearching(true);
+    try {
+      // First search for the page
+      const searchResponse = await fetch(
+        `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
+          searchQuery
+        )}&format=json&origin=*`
+      );
+      const searchData = await searchResponse.json();
+
+      if (!searchData.query.search.length) {
+        toast({
+          title: "No Results",
+          description: "No Wikipedia article found for this species.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get the first result's page ID
+      const pageId = searchData.query.search[0].pageid;
+
+      // Get the page content and images
+      const pageResponse = await fetch(
+        `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro=1&format=json&pithumbsize=1000&pageids=${pageId}&origin=*`
+      );
+      const pageData = await pageResponse.json();
+      const page = pageData.query.pages[pageId];
+
+      // Extract text content (removing HTML tags)
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = page.extract;
+      const description = tempDiv.textContent || tempDiv.innerText || "";
+
+      // Get the image URL if available
+      const imageUrl = page.thumbnail?.source;
+
+      // Update form fields
+      form.setValue("description", description);
+      if (imageUrl) {
+        form.setValue("image", imageUrl);
+      }
+
+      toast({
+        title: "Success",
+        description: "Species information found and filled!",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch species information. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -150,6 +216,31 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
             Add a new species here. Click &quot;Add Species&quot; below when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Search species on Wikipedia..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                searchWikipedia();
+              }
+            }}
+          />
+          <Button
+            variant="secondary"
+            onClick={searchWikipedia}
+            disabled={isSearching || !searchQuery.trim()}
+          >
+            {isSearching ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="mr-2 h-4 w-4" />
+            )}
+            Search
+          </Button>
+        </div>
         <Form {...form}>
           <form onSubmit={(e: BaseSyntheticEvent) => void form.handleSubmit(onSubmit)(e)}>
             <div className="grid w-full items-center gap-4">
