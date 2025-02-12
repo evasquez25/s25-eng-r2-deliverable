@@ -181,6 +181,7 @@ export type Enums<
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never;
 
+
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"] | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {

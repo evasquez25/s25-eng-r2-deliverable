@@ -105,7 +105,7 @@ export default function EditSpeciesDialog({ userId, species }: { userId: string;
         scientific_name: input.scientific_name,
         total_population: input.total_population,
         image: input.image,
-        endangered: input.endangered,
+        endangered: input.endangered ?? undefined,
       })
       .eq("id", species.id);
 
