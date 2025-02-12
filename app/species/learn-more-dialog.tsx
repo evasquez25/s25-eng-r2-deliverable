@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,13 +26,19 @@ export default function LearnMoreDialog({ species }: { species: Species }) {
       </DialogTrigger>
       <DialogContent className="max-h-screen overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">{species.scientific_name}</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-2xl font-bold">{species.scientific_name}</DialogTitle>
+            {species.endangered && (
+              <Badge variant="destructive" className="ml-2">
+                Endangered
+              </Badge>
+            )}
+          </div>
           {species.common_name && (
             <DialogDescription className="text-lg font-light italic">{species.common_name}</DialogDescription>
           )}
         </DialogHeader>
         <div className="grid gap-6">
-          
           {/* Image Section */}
           {species.image && (
             <div className="relative aspect-video w-full overflow-hidden rounded-lg">
@@ -48,21 +55,19 @@ export default function LearnMoreDialog({ species }: { species: Species }) {
           {/* Details Section */}
           <div className="grid gap-4">
             <div>
-              <h4 className="mb-2 font-semibold">Kingdom</h4>
-              <p>{species.kingdom}</p>
+              <h4 className="text-sm font-medium">Kingdom</h4>
+              <p className="text-sm text-muted-foreground">{species.kingdom}</p>
             </div>
-
-            {species.total_population && (
+            {species.total_population !== null && (
               <div>
-                <h4 className="mb-2 font-semibold">Total Population</h4>
-                <p>{species.total_population.toLocaleString()}</p>
+                <h4 className="text-sm font-medium">Total Population</h4>
+                <p className="text-sm text-muted-foreground">{species.total_population.toLocaleString()}</p>
               </div>
             )}
-
             {species.description && (
               <div>
-                <h4 className="mb-2 font-semibold">Description</h4>
-                <p className="whitespace-pre-wrap">{species.description}</p>
+                <h4 className="text-sm font-medium">Description</h4>
+                <p className="text-sm text-muted-foreground">{species.description}</p>
               </div>
             )}
           </div>
