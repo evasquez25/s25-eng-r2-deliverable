@@ -19,11 +19,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { createBrowserSupabaseClient } from "@/lib/client-utils";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type BaseSyntheticEvent } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Search, Loader2 } from "lucide-react";
 
 // We use zod (z) to define a schema for the "Add species" form.
 // zod handles validation of the input values with methods like .string(), .nullable(). It also processes the form inputs with .transform() before the inputs are sent to the database.
@@ -56,9 +56,7 @@ const speciesSchema = z.object({
     .nullable()
     // Transform empty string or only whitespace input to null before form submission, and trim whitespace otherwise
     .transform((val) => (!val || val.trim() === "" ? null : val.trim())),
-  endangered: z
-    .boolean()
-    .default(false),
+  endangered: z.boolean().default(false),
 });
 
 type FormData = z.infer<typeof speciesSchema>;
@@ -140,6 +138,23 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
     });
   };
 
+  interface WikipediaSearchResult {
+    query?: {
+      search?: { pageid: number; title: string; snippet: string }[];
+    };
+  }
+
+  interface WikipediaPage {
+    extract: string;
+    thumbnail?: { source: string } | null;
+  }
+
+  interface WikipediaPageResponse {
+    query: {
+      pages: Record<number, WikipediaPage>;
+    };
+  }
+
   const searchWikipedia = async () => {
     if (!searchQuery.trim()) return;
 
@@ -148,12 +163,12 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
       // First search for the page
       const searchResponse = await fetch(
         `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
-          searchQuery
-        )}&format=json&origin=*`
+          searchQuery,
+        )}&format=json&origin=*`,
       );
-      const searchData = await searchResponse.json();
+      const searchData: WikipediaSearchResult = (await searchResponse.json()) as WikipediaSearchResult;
 
-      if (!searchData.query.search.length) {
+      if (!searchData.query?.search?.length) {
         toast({
           title: "No Results",
           description: "No Wikipedia article found for this species.",
@@ -163,22 +178,38 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
       }
 
       // Get the first result's page ID
-      const pageId = searchData.query.search[0].pageid;
+      const pageId = searchData.query?.search?.[0]?.pageid;
+      if (!pageId) {
+        toast({
+          title: "No Results",
+          description: "No Wikipedia article found for this species.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       // Get the page content and images
       const pageResponse = await fetch(
-        `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro=1&format=json&pithumbsize=1000&pageids=${pageId}&origin=*`
+        `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro=1&format=json&pithumbsize=1000&pageids=${pageId}&origin=*`,
       );
-      const pageData = await pageResponse.json();
+      const pageData = (await pageResponse.json()) as WikipediaPageResponse;
       const page = pageData.query.pages[pageId];
+      if (!page) {
+        toast({
+          title: "No Results",
+          description: "No Wikipedia article found for this species.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       // Extract text content (removing HTML tags)
       const tempDiv = document.createElement("div");
       tempDiv.innerHTML = page.extract;
-      const description = tempDiv.textContent || tempDiv.innerText || "";
+      const description = tempDiv.textContent ?? tempDiv.innerText ?? "";
 
       // Get the image URL if available
-      const imageUrl = page.thumbnail?.source;
+      const imageUrl = page.thumbnail?.source ?? "";
 
       // Update form fields
       form.setValue("description", description);
@@ -224,20 +255,22 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
-                searchWikipedia();
+                searchWikipedia().catch((error) => {
+                  console.error("Error searching Wikipedia:", error);
+                });
               }
             }}
           />
           <Button
             variant="secondary"
-            onClick={searchWikipedia}
+            onClick={() => {
+              searchWikipedia().catch((error) => {
+                console.error("Error searching Wikipedia:", error);
+              });
+            }}
             disabled={isSearching || !searchQuery.trim()}
           >
-            {isSearching ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Search className="mr-2 h-4 w-4" />
-            )}
+            {isSearching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
             Search
           </Button>
         </div>

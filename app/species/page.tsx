@@ -1,5 +1,5 @@
-import { createServerSupabaseClient } from "@/lib/server-utils";
 import type { Database } from "@/lib/schema";
+import { createServerSupabaseClient } from "@/lib/server-utils";
 import { redirect } from "next/navigation";
 import SpeciesList from "./species-list";
 
@@ -25,16 +25,18 @@ export default async function SpeciesPage() {
   // Obtain the ID of the currently signed-in user
   const sessionId = session.user.id;
 
-  const { data: species } = await supabase
+  const { data: species } = (await supabase
     .from("species")
-    .select(`
+    .select(
+      `
       *,
       profiles:author (
         display_name,
         email
       )
-    `)
-    .order("id", { ascending: false }) as { data: SpeciesWithProfile[] | null };
+    `,
+    )
+    .order("id", { ascending: false })) as { data: SpeciesWithProfile[] | null };
 
   // If no species found, pass empty array to avoid null checks in client component
   return <SpeciesList initialSpecies={species ?? []} userId={sessionId} />;

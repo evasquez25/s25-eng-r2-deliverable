@@ -11,9 +11,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { Database } from "@/lib/schema";
+import { User } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import { User } from "lucide-react";
 
 type SpeciesWithProfile = Database["public"]["Tables"]["species"]["Row"] & {
   profiles: {
@@ -73,7 +73,7 @@ export default function LearnMoreDialog({ species }: { species: SpeciesWithProfi
           {/* Kingdom Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Kingdom</h3>
-            <p className="text-sm text-muted-foreground capitalize">{species.kingdom}</p>
+            <p className="text-sm capitalize text-muted-foreground">{species.kingdom}</p>
           </div>
 
           {/* Population Section */}

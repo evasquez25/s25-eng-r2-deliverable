@@ -3,11 +3,11 @@
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { TypographyH2 } from "@/components/ui/typography";
-import { useState } from "react";
-import type { SpeciesWithProfile } from "./page";
-import AddSpeciesDialog from "./add-species-dialog";
-import SpeciesCard from "./species-card";
 import { Search } from "lucide-react";
+import { useState } from "react";
+import AddSpeciesDialog from "./add-species-dialog";
+import type { SpeciesWithProfile } from "./page";
+import SpeciesCard from "./species-card";
 
 export default function SpeciesList({
   initialSpecies,
